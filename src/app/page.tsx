@@ -3,6 +3,25 @@
 import { Prisma } from "@/generated/prisma/client";
 import React from "react";
 import { JobStatus } from "@/generated/prisma/enums";
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Input,
+  TextArea,
+  Select,
+  Modal,
+  ModalFooter,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui";
 
 interface Link {
   id: number;
@@ -14,13 +33,10 @@ interface Link {
 
 export default function Home() {
   const [links, setLinks] = React.useState("");
-  // tipo de links do prisma
-
   const [submittedLinks, setSubmittedLinks] = React.useState<Link[]>([]);
   const [analyzedJobs, setAnalyzedJobs] = React.useState<
     Prisma.JobsUncheckedCreateInput[]
   >([]);
-  // selected job for details view
   const [selectedJob, setSelectedJob] =
     React.useState<Prisma.JobsUncheckedCreateInput | null>(null);
   const [localizations, setLocalizations] = React.useState<string[]>([]);
@@ -30,6 +46,7 @@ export default function Home() {
     Prisma.JobsUncheckedCreateInput[]
   >([]);
 
+  // Filters
   const [filterStatus, setFilterStatus] = React.useState<JobStatus>(
     JobStatus.NEW
   );
@@ -44,8 +61,6 @@ export default function Home() {
     fetch("/api/links")
       .then((response) => response.json())
       .then((data) => {
-        // Aqui você pode atualizar o estado com os links recebidos
-        console.log("Links recebidos:", data);
         setSubmittedLinks(data.links);
       })
       .catch((error) => {
@@ -59,7 +74,6 @@ export default function Home() {
     )
       .then((response) => response.json())
       .then((data) => {
-        console.log("Vagas analisadas recebidas:", data);
         setAnalyzedJobs(data.jobs);
         const uniqueLocations: string[] = Array.from(
           new Set(
@@ -68,7 +82,6 @@ export default function Home() {
             )
           )
         );
-        // every all locations, independent of filter
         if (localizations.length === 0) {
           setLocalizations(uniqueLocations);
         }
@@ -100,7 +113,6 @@ export default function Home() {
       body: JSON.stringify({ links: linksArray }),
     });
     const data = await response.json();
-    console.log("Success:", data);
     setLinks("");
     setSubmittedLinks((prev) => [...prev, ...data.createdLinks]);
   }
@@ -109,11 +121,10 @@ export default function Home() {
     setNote(job.note || "");
     setStatus(job.status || JobStatus.NEW);
     setSelectedJob(job);
-    // fetch other jobs from the same company
+
     fetch(`/api/jobs?company=${encodeURIComponent(job.company)}`)
       .then((response) => response.json())
       .then((data) => {
-        console.log("Outras vagas da mesma empresa:", data);
         setSameCompanyJobs(data.jobs || []);
       })
       .catch((error) => {
@@ -123,25 +134,18 @@ export default function Home() {
 
   async function handleLinkAnalyze(link: Link) {
     try {
-      // exemplo de chamada para rota de análise; ajuste conforme a API do projeto
       const res = await fetch(`/api/links/${link.id}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: link.id, url: link.url }),
       });
-      const data = await res.json();
-      console.log("Análise iniciada:", data);
+      await res.json();
 
       setSubmittedLinks((prev) => prev.filter((l) => l.id !== link.id));
-      fetch("/api/jobs")
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Vagas analisadas recebidas:", data);
-          setAnalyzedJobs(data.jobs);
-        })
-        .catch((error) => {
-          console.error("Erro ao buscar vagas analisadas:", error);
-        });
+
+      const jobsRes = await fetch("/api/jobs");
+      const jobsData = await jobsRes.json();
+      setAnalyzedJobs(jobsData.jobs);
     } catch (err) {
       console.error("Erro ao iniciar análise:", err);
     }
@@ -158,8 +162,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, note }),
       });
-      const data = await res.json();
-      console.log("Vaga atualizada:", data);
+      await res.json();
 
       setAnalyzedJobs((prevJobs) =>
         prevJobs.map((job) =>
@@ -173,432 +176,407 @@ export default function Home() {
     }
   }
 
+  const getStatusLabel = (status: JobStatus): string => {
+    const labels: Record<JobStatus, string> = {
+      [JobStatus.NEW]: "Nova",
+      [JobStatus.APPLIED]: "Candidatado",
+      [JobStatus.INTERVIEWING]: "Entrevista",
+      [JobStatus.IN_CONTACT]: "Em Contato",
+      [JobStatus.SEE_LATER]: "Ver Depois",
+      [JobStatus.REJECTED]: "Rejeitado",
+      [JobStatus.DISCARDED]: "Descartado",
+    };
+    return labels[status] || status;
+  };
+
   return (
-    <div>
-      <h1>Vagas Tracker</h1>
-      <p>Cole os links das vagas do LinkedIn que deseja rastrear:</p>
-      <form method="POST" onSubmit={handleLinksSubmit}>
-        <textarea
-          name="links"
-          rows={10}
-          cols={50}
-          placeholder="Cole os links aqui, um por linha"
-          value={links}
-          onChange={(e) => setLinks(e.target.value)}
-        ></textarea>
-        <br />
-        <button type="submit">Enviar Links</button>
-      </form>
-      {/* tabela de links com botão Analisar */}
-      <div>
-        <h2>Links Enviados:</h2>
-        {submittedLinks.length === 0 ? (
-          <p>Nenhum link enviado ainda.</p>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  URL
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Data de Inclusão
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {submittedLinks.map((link) => (
-                <tr key={link.id}>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {link.url}
-                    </a>
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {new Date(link.createdAt).toLocaleString()}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    <button
-                      onClick={() => handleLinkAnalyze(link)}
-                      style={{ padding: "6px 12px", cursor: "pointer" }}
-                    >
-                      Analisar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-      <div>
-        <h2>Vagas Analisadas:</h2>
-        <div style={{ marginBottom: "16px" }}>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as JobStatus)}
-            style={{ marginRight: "8px" }}
-          >
-            <option value="">Filtrar por status</option>
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="Filtrar por título"
-            value={filterTitle}
-            onChange={(e) => setFilterTitle(e.target.value)}
-            style={{ marginRight: "8px" }}
-          />
-          <select
-            value={filterLocation}
-            onChange={(e) => setFilterLocation(e.target.value as string)}
-            style={{ marginRight: "8px" }}
-          >
-            <option value="">Filtrar por localização</option>
-            {localizations.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filterSortJobDate}
-            onChange={(e) => setFilterSortJobDate(e.target.value)}
-          >
-            <option value="">Ordenar por data</option>
-            <option value="asc">Crescente</option>
-            <option value="desc">Decrescente</option>
-          </select>
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-[var(--foreground)] mb-1">
+            Vagas Tracker
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Gerencie suas candidaturas de emprego de forma eficiente
+          </p>
         </div>
-        {!analyzedJobs || analyzedJobs.length === 0 ? (
-          <p>Nenhuma vaga analisada ainda.</p>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Data da Vaga
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Título
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Empresa
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Localização
-                </th>
-                {/* seniority, type, status */}
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Tipo
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Senioridade
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Status
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    borderBottom: "1px solid #ccc",
-                    padding: "8px",
-                  }}
-                >
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {analyzedJobs.map((job, index) => (
-                <tr
-                  key={index}
-                  className={`cursor-pointer hover:bg-blue-800 ${
-                    selectedJob?.id === job.id ? "bg-blue-900 text-white" : ""
-                  }`}
-                  onClick={() => handleSelectJob(job)}
-                >
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {job.jobDate
-                      ? new Date(job.jobDate).toLocaleDateString()
-                      : "N/A"}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {job.title}{" "}
-                    {job.note && (
-                      <>
-                        <br />
-                        <small className="text-red-500">Nota: {job.note}</small>
-                      </>
-                    )}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {job.company}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {job.location}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {job.type || "N/A"}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {job.seniority || "N/A"}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    {job.status || "N/A"}
-                  </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                  >
-                    <a
-                      href={job.url || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ padding: "6px 12px", cursor: "pointer" }}
-                    >
-                      Ir Para
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-      {selectedJob && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-          onClick={() => setSelectedJob(null)}
-        >
-          <div
-            style={{
-              backgroundColor: "blue",
-              padding: "24px",
-              borderRadius: "8px",
-              minWidth: "300px",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2>Detalhes da Vaga</h2>
-            <p>
-              <strong>Título:</strong> {selectedJob.title}{" "}
-              {selectedJob.note && (
-                <small className="text-red-500">
-                  <br />
-                  Nota: {selectedJob.note}
-                </small>
-              )}
-            </p>
-            <p>
-              <strong>Empresa:</strong> {selectedJob.company}
-            </p>
-            <p>
-              <strong>Localização:</strong> {selectedJob.location}
-            </p>
-            <p>
-              <strong>Tipo:</strong> {selectedJob.type || "N/A"}
-            </p>
-            <p>
-              <strong>Senioridade:</strong> {selectedJob.seniority || "N/A"}
-            </p>
-            <p>
-              <strong>Status:</strong> {selectedJob.status || "N/A"}
-            </p>
-            <p>
-              <strong>URL:</strong>{" "}
-              <a
-                href={selectedJob.url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {selectedJob.url}
-              </a>
-            </p>
-            {/* lista de jobs da mesma company (jogDate, title, status) */}
-            <div style={{ marginTop: "16px" }}>
-              <h3>Outras Vagas na {selectedJob.company}:</h3>
-              {sameCompanyJobs.length === 0 && (
-                <p>Nenhuma outra vaga encontrada.</p>
-              )}
-              <ul>
-                {sameCompanyJobs
-                  .filter(
-                    (job) =>
-                      job.company === selectedJob.company &&
-                      job.id !== selectedJob.id
-                  )
-                  .map((job) => (
-                    <li key={job.id}>
-                      {job.title} -{" "}
-                      {job.jobDate
-                        ? new Date(job.jobDate).toLocaleDateString()
-                        : "N/A"}{" "}
-                      - {job.status}
-                    </li>
-                  ))}
-              </ul>
-            </div>
-            <form
-              style={{ marginTop: "16px" }}
-              method="POST"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleJobUpdate(selectedJob.id!, status, note);
-              }}
-            >
-              <label>
-                Status:
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as JobStatus)}
-                  style={{ marginLeft: "8px" }}
-                >
-                  <option value="">Selecione o status</option>
-                  {statusOptions.map((statusOption) => (
-                    <option key={statusOption} value={statusOption}>
-                      {statusOption}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <br />
-              <label style={{ marginTop: "8px", display: "block" }}>
-                Nota:
-                <br />
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={4}
-                  cols={40}
-                  style={{ marginTop: "4px" }}
-                ></textarea>
-              </label>
-              <br />
-              <button
-                type="submit"
-                style={{
-                  marginTop: "8px",
-                  padding: "6px 12px",
-                  cursor: "pointer",
-                }}
-              >
-                Salvar
-              </button>
+
+        {/* Add Links Section */}
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Adicionar Novas Vagas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLinksSubmit} className="space-y-3">
+              <TextArea
+                label="Links do LinkedIn"
+                placeholder="Cole os links das vagas aqui, um por linha"
+                rows={5}
+                value={links}
+                onChange={(e) => setLinks(e.target.value)}
+              />
+              <Button type="submit" variant="primary" size="sm">
+                Adicionar Links
+              </Button>
             </form>
-            <button
-              onClick={() => setSelectedJob(null)}
-              style={{
-                marginTop: "16px",
-                padding: "6px 12px",
-                cursor: "pointer",
-              }}
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
+          </CardContent>
+        </Card>
+
+        {/* Submitted Links Table */}
+        {submittedLinks.length > 0 && (
+          <Card className="mb-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Links Pendentes</CardTitle>
+                <Badge variant="info">{submittedLinks.length}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ações</TableHead>
+                    <TableHead>URL</TableHead>
+                    <TableHead>Data</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {submittedLinks.map((link) => (
+                    <TableRow key={link.id}>
+                      <TableCell>
+                        <Button
+                          onClick={() => handleLinkAnalyze(link)}
+                          size="sm"
+                          variant="primary"
+                        >
+                          Analisar
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--primary)] hover:underline truncate block max-w-md text-xs"
+                        >
+                          {link.url}
+                        </a>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {new Date(link.createdAt).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Filters */}
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Select
+                label="Status"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as JobStatus)}
+                options={[
+                  { value: "", label: "Todos" },
+                  ...statusOptions.map((status) => ({
+                    value: status,
+                    label: getStatusLabel(status),
+                  })),
+                ]}
+              />
+              <Input
+                label="Título"
+                type="text"
+                placeholder="Filtrar por título"
+                value={filterTitle}
+                onChange={(e) => setFilterTitle(e.target.value)}
+              />
+              <Select
+                label="Localização"
+                value={filterLocation}
+                onChange={(e) => setFilterLocation(e.target.value)}
+                options={[
+                  { value: "", label: "Todas" },
+                  ...localizations.map((loc) => ({ value: loc, label: loc })),
+                ]}
+              />
+              <Select
+                label="Ordenar por Data"
+                value={filterSortJobDate}
+                onChange={(e) => setFilterSortJobDate(e.target.value)}
+                options={[
+                  { value: "desc", label: "Mais recentes" },
+                  { value: "asc", label: "Mais antigas" },
+                ]}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Jobs Table */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Vagas Analisadas</CardTitle>
+              <Badge variant="default">{analyzedJobs.length}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!analyzedJobs || analyzedJobs.length === 0 ? (
+              <div className="text-center py-12">
+                <svg
+                  className="mx-auto h-12 w-12 text-[var(--text-muted)]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <p className="mt-4 text-[var(--text-secondary)]">
+                  Nenhuma vaga analisada ainda. Adicione links acima para
+                  começar.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ações</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Local</TableHead>
+                    <TableHead>Data</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analyzedJobs.map((job) => (
+                    <TableRow
+                      key={job.id}
+                      onClick={() => handleSelectJob(job)}
+                      className={
+                        selectedJob?.id === job.id
+                          ? "bg-[var(--primary-light)]"
+                          : ""
+                      }
+                    >
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <a
+                            href={job.url || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button size="sm" variant="primary">
+                              Ver
+                            </Button>
+                          </a>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge status={job.status}>
+                          {getStatusLabel(job.status || JobStatus.NEW)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-sm">{job.title}</div>
+                          {job.note && (
+                            <div className="text-xs text-[var(--error)] mt-0.5">
+                              📝 {job.note.substring(0, 40)}
+                              {job.note.length > 40 ? "..." : ""}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{job.company}</TableCell>
+                      <TableCell className="text-xs text-[var(--text-muted)]">
+                        {job.location}
+                      </TableCell>
+                      <TableCell className="text-xs text-[var(--text-muted)]">
+                        {job.jobDate
+                          ? new Date(job.jobDate).toLocaleDateString("pt-BR")
+                          : "N/A"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Job Detail Modal */}
+        <Modal
+          isOpen={!!selectedJob}
+          onClose={() => setSelectedJob(null)}
+          title="Detalhes da Vaga"
+          size="lg"
+        >
+          {selectedJob && (
+            <>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-base font-semibold text-[var(--foreground)]">
+                    {selectedJob.title}
+                  </h3>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {selectedJob.company}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-sm text-[var(--text-muted)]">
+                      Localização
+                    </span>
+                    <p className="text-[var(--foreground)]">
+                      {selectedJob.location}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-[var(--text-muted)]">
+                      Tipo
+                    </span>
+                    <p className="text-[var(--foreground)]">
+                      {selectedJob.type || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-[var(--text-muted)]">
+                      Senioridade
+                    </span>
+                    <p className="text-[var(--foreground)]">
+                      {selectedJob.seniority || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-[var(--text-muted)]">
+                      Data da Vaga
+                    </span>
+                    <p className="text-[var(--foreground)]">
+                      {selectedJob.jobDate
+                        ? new Date(selectedJob.jobDate).toLocaleDateString(
+                            "pt-BR"
+                          )
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs text-[var(--text-muted)]">URL</span>
+                  <a
+                    href={selectedJob.url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[var(--primary)] hover:underline block truncate"
+                  >
+                    {selectedJob.url}
+                  </a>
+                </div>
+
+                {/* Other jobs from same company */}
+                {sameCompanyJobs.filter(
+                  (job) =>
+                    job.company === selectedJob.company &&
+                    job.id !== selectedJob.id
+                ).length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                    <h4 className="font-semibold text-sm text-[var(--foreground)] mb-2">
+                      Outras Vagas na {selectedJob.company}
+                    </h4>
+                    <ul className="space-y-1.5">
+                      {sameCompanyJobs
+                        .filter(
+                          (job) =>
+                            job.company === selectedJob.company &&
+                            job.id !== selectedJob.id
+                        )
+                        .map((job) => (
+                          <li
+                            key={job.id}
+                            className="flex items-center justify-between text-xs p-1.5 rounded bg-[var(--surface-hover)]"
+                          >
+                            <span className="text-[var(--foreground)] text-sm">
+                              {job.title}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[var(--text-muted)]">
+                                {job.jobDate
+                                  ? new Date(job.jobDate).toLocaleDateString(
+                                      "pt-BR"
+                                    )
+                                  : "N/A"}
+                              </span>
+                              <Badge status={job.status}>
+                                {getStatusLabel(job.status || JobStatus.NEW)}
+                              </Badge>
+                            </div>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Update Form */}
+                <form
+                  className="mt-4 pt-4 border-t border-[var(--border)] space-y-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleJobUpdate(selectedJob.id!, status, note);
+                  }}
+                >
+                  <Select
+                    label="Status"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as JobStatus)}
+                    options={statusOptions.map((statusOption) => ({
+                      value: statusOption,
+                      label: getStatusLabel(statusOption),
+                    }))}
+                  />
+                  <TextArea
+                    label="Anotações"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={3}
+                    placeholder="Adicione suas anotações sobre esta vaga..."
+                  />
+                  <ModalFooter>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setSelectedJob(null)}
+                      size="sm"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" variant="primary" size="sm">
+                      Salvar Alterações
+                    </Button>
+                  </ModalFooter>
+                </form>
+              </div>
+            </>
+          )}
+        </Modal>
+      </div>
     </div>
   );
 }
