@@ -1,65 +1,329 @@
-import Image from "next/image";
+"use client";
+
+import { Prisma } from "@/generated/prisma/client";
+import React from "react";
+
+interface Link {
+  id: number;
+  url: string;
+  done: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function Home() {
+  const [links, setLinks] = React.useState("");
+  // tipo de links do prisma
+
+  const [submittedLinks, setSubmittedLinks] = React.useState<Link[]>([]);
+  const [analyzedJobs, setAnalyzedJobs] = React.useState<
+    Prisma.JobsCreateInput[]
+  >([]);
+
+  // ler os links incluídos usando a api route /api/links
+  React.useEffect(() => {
+    fetch("/api/links")
+      .then((response) => response.json())
+      .then((data) => {
+        // Aqui você pode atualizar o estado com os links recebidos
+        console.log("Links recebidos:", data);
+        setSubmittedLinks(data.links);
+      })
+      .catch((error) => {
+        console.error("Erro ao buscar links:", error);
+      });
+  }, []);
+
+  React.useEffect(() => {
+    fetch("/api/jobs")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Vagas analisadas recebidas:", data);
+        setAnalyzedJobs(data.jobs);
+      })
+      .catch((error) => {
+        console.error("Erro ao buscar vagas analisadas:", error);
+      });
+  }, []);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const linksArray = links
+      .split("\n")
+      .map((link) => link.trim())
+      .filter((link) => link.length > 0);
+
+    const response = await fetch("/api/links", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ links: linksArray }),
+    });
+    const data = await response.json();
+    console.log("Success:", data);
+    setLinks("");
+    setSubmittedLinks((prev) => [...prev, ...data.createdLinks]);
+  }
+
+  async function handleAnalyze(link: Link) {
+    try {
+      // exemplo de chamada para rota de análise; ajuste conforme a API do projeto
+      const res = await fetch(`/api/links/${link.id}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: link.id, url: link.url }),
+      });
+      const data = await res.json();
+      console.log("Análise iniciada:", data);
+
+      setSubmittedLinks((prev) => prev.filter((l) => l.id !== link.id));
+      fetch("/api/jobs")
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Vagas analisadas recebidas:", data);
+          setAnalyzedJobs(data.jobs);
+        })
+        .catch((error) => {
+          console.error("Erro ao buscar vagas analisadas:", error);
+        });
+    } catch (err) {
+      console.error("Erro ao iniciar análise:", err);
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div>
+      <h1>Vagas Tracker</h1>
+      <p>Cole os links das vagas do LinkedIn que deseja rastrear:</p>
+      <form method="POST" onSubmit={handleSubmit}>
+        <textarea
+          name="links"
+          rows={10}
+          cols={50}
+          placeholder="Cole os links aqui, um por linha"
+          value={links}
+          onChange={(e) => setLinks(e.target.value)}
+        ></textarea>
+        <br />
+        <button type="submit">Enviar Links</button>
+      </form>
+      {/* tabela de links com botão Analisar */}
+      <div>
+        <h2>Links Enviados:</h2>
+        {submittedLinks.length === 0 ? (
+          <p>Nenhum link enviado ainda.</p>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  URL
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Data de Inclusão
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {submittedLinks.map((link) => (
+                <tr key={link.id}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.url}
+                    </a>
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {new Date(link.createdAt).toLocaleString()}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    <button
+                      onClick={() => handleAnalyze(link)}
+                      style={{ padding: "6px 12px", cursor: "pointer" }}
+                    >
+                      Analisar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      {/* tabela de Jobs com o botão Ir Para */}
+      <div>
+        <h2>Vagas Analisadas:</h2>
+        {analyzedJobs.length === 0 ? (
+          <p>Nenhuma vaga analisada ainda.</p>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Data da Vaga
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Título
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Empresa
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Localização
+                </th>
+                {/* seniority, type, status */}
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Tipo
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Senioridade
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Status
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #ccc",
+                    padding: "8px",
+                  }}
+                >
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {analyzedJobs.map((job, index) => (
+                <tr key={index}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {job.jobDate
+                      ? new Date(job.jobDate).toLocaleDateString()
+                      : "N/A"}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {job.title}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {job.company}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {job.location}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {job.type || "N/A"}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {job.seniority || "N/A"}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    {job.status || "N/A"}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #eee" }}
+                  >
+                    <a
+                      href={job.url || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ padding: "6px 12px", cursor: "pointer" }}
+                    >
+                      Ir Para
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
