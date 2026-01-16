@@ -1,0 +1,27 @@
+import { JobStatus } from "@/generated/prisma/enums";
+import prisma from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const jobId = (await params).id;
+    console.log("Updating job with ID:", jobId);
+    const body = await request.json();
+    console.log("Request body:", body);
+    const { status, note } = body;
+    const updatedJob = await prisma.jobs.update({
+      where: { id: Number(jobId) },
+      data: { status: status as JobStatus, note: note },
+    });
+    return NextResponse.json({ job: updatedJob }, { status: 200 });
+  } catch (error) {
+    console.error("Error updating job:", error);
+    return NextResponse.json(
+      { error: "An error occurred while updating the job." },
+      { status: 500 }
+    );
+  }
+}

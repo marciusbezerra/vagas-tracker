@@ -1,10 +1,92 @@
 // GET Jobs form Prisma
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { JobStatus } from "@/generated/prisma/enums";
+import {
+  JobsOrderByWithRelationInput,
+  JobsWhereInput,
+} from "@/generated/prisma/internal/prismaNamespaceBrowser";
+import { z } from "zod";
 
-export async function GET() {
+const QuerySchema = z.object({
+  status: z.enum(JobStatus).optional().default("NEW"),
+  title: z.string().optional(),
+  sortJobDate: z.enum(["asc", "desc"]).optional().default("desc"),
+  location: z.string().optional(),
+  company: z.string().optional(),
+  // page: z.coerce.number().min(1).default(1),
+  // limit: z.coerce.number().min(1).max(100).default(20),
+});
+
+// filtro por status e parte do title, opção de ordenar por data de criação (crescente ou decrescente)
+export async function GET(request: NextRequest) {
   try {
-    const jobs = await prisma.jobs.findMany();
+    const queryParams = request.nextUrl.searchParams;
+
+    const query = QuerySchema.safeParse({
+      status: queryParams.get("status") || undefined,
+      title: queryParams.get("title") || undefined,
+      sortJobDate: queryParams.get("sortJobDate") || undefined,
+      location: queryParams.get("location") || undefined,
+      company: queryParams.get("company") || undefined,
+      // page: queryParams.get("page") || undefined,
+      // limit: queryParams.get("limit") || undefined,
+    });
+
+    if (!query.success) {
+      console.error("Invalid query parameters:", query.error.format());
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: query.error.format() },
+        { status: 400 }
+      );
+    }
+
+    console.log("Search Params:", queryParams.toString());
+    console.log("Received query params:", query.data);
+
+    const status = query.data.status;
+    const title = query.data.title;
+    const order = query.data.sortJobDate;
+    const location = query.data.location;
+    const company = query.data.company;
+    const whereClause: JobsWhereInput = {};
+
+    if (company) {
+      whereClause.company = company;
+    }
+
+    if (status) {
+      whereClause.status = status as JobStatus;
+    }
+
+    if (title) {
+      whereClause.title = {
+        contains: title,
+        // mode: "insensitive",
+      };
+    }
+
+    if (location) {
+      whereClause.location = {
+        contains: location,
+        // mode: "insensitive",
+      };
+    }
+
+    const orderByClause: JobsOrderByWithRelationInput = {};
+    if (order === "asc") {
+      orderByClause.jobDate = "asc";
+    } else if (order === "desc") {
+      orderByClause.jobDate = "desc";
+    }
+
+    console.log("Where Clause:", whereClause);
+    console.log("Order By Clause:", orderByClause);
+
+    const jobs = await prisma.jobs.findMany({
+      where: whereClause,
+      orderBy: orderByClause,
+    });
     return NextResponse.json({ jobs }, { status: 200 });
   } catch (error) {
     console.error("Error fetching jobs:", error);
