@@ -6,7 +6,7 @@ import { Prisma } from "@/generated/prisma/client";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const linkId = parseInt((await params).id, 10);
 
@@ -44,13 +44,13 @@ export async function POST(
 
     return NextResponse.json(
       { message: "Link analyzed successfully.", linkId },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error analyzing link:", error);
     return NextResponse.json(
       { error: "An error occurred while analyzing the link." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

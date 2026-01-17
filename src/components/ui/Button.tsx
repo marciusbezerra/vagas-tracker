@@ -11,10 +11,11 @@ export function Button({
   size = "md",
   children,
   className = "",
+  disabled,
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "btn font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    "btn font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none";
 
   const variants = {
     primary: "btn-primary",
@@ -34,6 +35,7 @@ export function Button({
   return (
     <button
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+      disabled={disabled}
       {...props}
     >
       {children}

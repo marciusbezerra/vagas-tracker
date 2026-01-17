@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const jobId = (await params).id;
@@ -21,7 +21,7 @@ export async function PUT(
     console.error("Error updating job:", error);
     return NextResponse.json(
       { error: "An error occurred while updating the job." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

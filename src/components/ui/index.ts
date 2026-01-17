@@ -11,3 +11,4 @@ export {
   TableHead,
   TableCell,
 } from "./Table";
+export { Pagination } from "./Pagination";

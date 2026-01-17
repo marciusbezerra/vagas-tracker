@@ -21,6 +21,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  Pagination,
 } from "@/components/ui";
 
 interface Link {
@@ -55,6 +56,12 @@ export default function Home() {
     React.useState<string>("desc");
   const [filterLocation, setFilterLocation] = React.useState<string>("");
 
+  // Pagination
+  const [linksPage, setLinksPage] = React.useState(1);
+  const [jobsPage, setJobsPage] = React.useState(1);
+  const linksPerPage = 10;
+  const jobsPerPage = 20;
+
   const statusOptions = Object.values(JobStatus);
 
   React.useEffect(() => {
@@ -77,7 +84,7 @@ export default function Home() {
         setAnalyzedJobs(data.jobs);
         const uniqueLocations: string[] = Array.from(
           new Set(
-            data.jobs.map(
+            data.jobs?.map(
               (job: Prisma.JobsUncheckedCreateInput) => job.location
             )
           )
@@ -85,6 +92,8 @@ export default function Home() {
         if (localizations.length === 0) {
           setLocalizations(uniqueLocations);
         }
+        // Reset to first page when filters change
+        setJobsPage(1);
       })
       .catch((error) => {
         console.error("Erro ao buscar vagas analisadas:", error);
@@ -189,9 +198,26 @@ export default function Home() {
     return labels[status] || status;
   };
 
+  // Pagination calculations
+  const paginatedLinks = React.useMemo(() => {
+    const startIndex = (linksPage - 1) * linksPerPage;
+    const endIndex = startIndex + linksPerPage;
+    return (submittedLinks || []).slice(startIndex, endIndex);
+  }, [submittedLinks, linksPage, linksPerPage]);
+
+  const paginatedJobs = React.useMemo(() => {
+    const startIndex = (jobsPage - 1) * jobsPerPage;
+    const endIndex = startIndex + jobsPerPage;
+    return (analyzedJobs || []).slice(startIndex, endIndex);
+  }, [analyzedJobs, jobsPage, jobsPerPage]);
+
+  const totalLinksPages = Math.ceil(
+    (submittedLinks || []).length / linksPerPage
+  );
+  const totalJobsPages = Math.ceil((analyzedJobs || []).length / jobsPerPage);
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 py-4">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-[var(--foreground)] mb-1">
@@ -224,12 +250,12 @@ export default function Home() {
         </Card>
 
         {/* Submitted Links Table */}
-        {submittedLinks.length > 0 && (
+        {(submittedLinks || []).length > 0 && (
           <Card className="mb-4">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Links Pendentes</CardTitle>
-                <Badge variant="info">{submittedLinks.length}</Badge>
+                <Badge variant="info">{(submittedLinks || []).length}</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -242,7 +268,7 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {submittedLinks.map((link) => (
+                  {paginatedLinks.map((link) => (
                     <TableRow key={link.id}>
                       <TableCell>
                         <Button
@@ -270,6 +296,13 @@ export default function Home() {
                   ))}
                 </TableBody>
               </Table>
+              <Pagination
+                currentPage={linksPage}
+                totalPages={totalLinksPages}
+                onPageChange={setLinksPage}
+                itemsPerPage={linksPerPage}
+                totalItems={(submittedLinks || []).length}
+              />
             </CardContent>
           </Card>
         )}
@@ -327,7 +360,7 @@ export default function Home() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Vagas Analisadas</CardTitle>
-              <Badge variant="default">{analyzedJobs.length}</Badge>
+              <Badge variant="default">{(analyzedJobs || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -352,71 +385,82 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ações</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Local</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {analyzedJobs.map((job) => (
-                    <TableRow
-                      key={job.id}
-                      onClick={() => handleSelectJob(job)}
-                      className={
-                        selectedJob?.id === job.id
-                          ? "bg-[var(--primary-light)]"
-                          : ""
-                      }
-                    >
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <a
-                            href={job.url || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Button size="sm" variant="primary">
-                              Ver
-                            </Button>
-                          </a>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge status={job.status}>
-                          {getStatusLabel(job.status || JobStatus.NEW)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-sm">{job.title}</div>
-                          {job.note && (
-                            <div className="text-xs text-[var(--error)] mt-0.5">
-                              📝 {job.note.substring(0, 40)}
-                              {job.note.length > 40 ? "..." : ""}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{job.company}</TableCell>
-                      <TableCell className="text-xs text-[var(--text-muted)]">
-                        {job.location}
-                      </TableCell>
-                      <TableCell className="text-xs text-[var(--text-muted)]">
-                        {job.jobDate
-                          ? new Date(job.jobDate).toLocaleDateString("pt-BR")
-                          : "N/A"}
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ações</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Empresa</TableHead>
+                      <TableHead>Local</TableHead>
+                      <TableHead>Data</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedJobs.map((job) => (
+                      <TableRow
+                        key={job.id}
+                        onClick={() => handleSelectJob(job)}
+                        className={
+                          selectedJob?.id === job.id
+                            ? "bg-[var(--primary-light)]"
+                            : ""
+                        }
+                      >
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <a
+                              href={job.url || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button size="sm" variant="primary">
+                                Ver
+                              </Button>
+                            </a>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge status={job.status}>
+                            {getStatusLabel(job.status || JobStatus.NEW)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium text-sm">
+                              {job.title}
+                            </div>
+                            {job.note && (
+                              <div className="text-xs text-[var(--error)] mt-0.5">
+                                📝 {job.note.substring(0, 40)}
+                                {job.note.length > 40 ? "..." : ""}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">{job.company}</TableCell>
+                        <TableCell className="text-xs text-[var(--text-muted)]">
+                          {job.location}
+                        </TableCell>
+                        <TableCell className="text-xs text-[var(--text-muted)]">
+                          {job.jobDate
+                            ? new Date(job.jobDate).toLocaleDateString("pt-BR")
+                            : "N/A"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <Pagination
+                  currentPage={jobsPage}
+                  totalPages={totalJobsPages}
+                  onPageChange={setJobsPage}
+                  itemsPerPage={jobsPerPage}
+                  totalItems={analyzedJobs.length}
+                />
+              </>
             )}
           </CardContent>
         </Card>
