@@ -9,7 +9,7 @@ import {
 import { z } from "zod";
 
 const QuerySchema = z.object({
-  status: z.enum(JobStatus).optional().default("NEW"),
+  status: z.enum(JobStatus).optional(),
   title: z.string().optional(),
   sortJobDate: z.enum(["asc", "desc"]).optional().default("desc"),
   location: z.string().optional(),
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       console.error("Invalid query parameters:", query.error.format());
       return NextResponse.json(
         { error: "Invalid query parameters", details: query.error.format() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching jobs:", error);
     return NextResponse.json(
       { error: "An error occurred while fetching jobs." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

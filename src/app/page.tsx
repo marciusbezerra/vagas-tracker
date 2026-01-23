@@ -49,7 +49,7 @@ export default function Home() {
 
   // Filters
   const [filterStatus, setFilterStatus] = React.useState<JobStatus>(
-    JobStatus.NEW
+    JobStatus.NEW,
   );
   const [filterTitle, setFilterTitle] = React.useState<string>("");
   const [filterSortJobDate, setFilterSortJobDate] =
@@ -77,7 +77,7 @@ export default function Home() {
 
   React.useEffect(() => {
     fetch(
-      `/api/jobs?status=${filterStatus}&title=${filterTitle}&sortJobDate=${filterSortJobDate}&location=${filterLocation}`
+      `/api/jobs?status=${filterStatus}&title=${filterTitle}&sortJobDate=${filterSortJobDate}&location=${filterLocation}`,
     )
       .then((response) => response.json())
       .then((data) => {
@@ -85,9 +85,9 @@ export default function Home() {
         const uniqueLocations: string[] = Array.from(
           new Set(
             data.jobs?.map(
-              (job: Prisma.JobsUncheckedCreateInput) => job.location
-            )
-          )
+              (job: Prisma.JobsUncheckedCreateInput) => job.location,
+            ),
+          ),
         );
         if (localizations.length === 0) {
           setLocalizations(uniqueLocations);
@@ -163,7 +163,7 @@ export default function Home() {
   async function handleJobUpdate(
     jobId: number,
     status: JobStatus,
-    note: string
+    note: string,
   ) {
     try {
       const res = await fetch(`/api/jobs/${jobId}`, {
@@ -175,8 +175,8 @@ export default function Home() {
 
       setAnalyzedJobs((prevJobs) =>
         prevJobs.map((job) =>
-          job.id === jobId ? { ...job, status: status, note: note } : job
-        )
+          job.id === jobId ? { ...job, status: status, note: note } : job,
+        ),
       );
 
       setSelectedJob(null);
@@ -212,7 +212,7 @@ export default function Home() {
   }, [analyzedJobs, jobsPage, jobsPerPage]);
 
   const totalLinksPages = Math.ceil(
-    (submittedLinks || []).length / linksPerPage
+    (submittedLinks || []).length / linksPerPage,
   );
   const totalJobsPages = Math.ceil((analyzedJobs || []).length / jobsPerPage);
   return (
@@ -516,7 +516,7 @@ export default function Home() {
                     <p className="text-[var(--foreground)]">
                       {selectedJob.jobDate
                         ? new Date(selectedJob.jobDate).toLocaleDateString(
-                            "pt-BR"
+                            "pt-BR",
                           )
                         : "N/A"}
                     </p>
@@ -539,7 +539,7 @@ export default function Home() {
                 {sameCompanyJobs.filter(
                   (job) =>
                     job.company === selectedJob.company &&
-                    job.id !== selectedJob.id
+                    job.id !== selectedJob.id,
                 ).length > 0 && (
                   <div className="mt-4 pt-4 border-t border-[var(--border)]">
                     <h4 className="font-semibold text-sm text-[var(--foreground)] mb-2">
@@ -550,12 +550,13 @@ export default function Home() {
                         .filter(
                           (job) =>
                             job.company === selectedJob.company &&
-                            job.id !== selectedJob.id
+                            job.id !== selectedJob.id,
                         )
                         .map((job) => (
                           <li
                             key={job.id}
-                            className="flex items-center justify-between text-xs p-1.5 rounded bg-[var(--surface-hover)]"
+                            className="flex items-center justify-between text-xs p-1.5 rounded bg-[var(--surface-hover)] cursor-pointer hover:border hover:border-[var(--primary)]"
+                            onClick={() => handleSelectJob(job)}
                           >
                             <span className="text-[var(--foreground)] text-sm">
                               {job.title}
@@ -564,7 +565,7 @@ export default function Home() {
                               <span className="text-[var(--text-muted)]">
                                 {job.jobDate
                                   ? new Date(job.jobDate).toLocaleDateString(
-                                      "pt-BR"
+                                      "pt-BR",
                                     )
                                   : "N/A"}
                               </span>
