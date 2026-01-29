@@ -10,7 +10,7 @@ import { z } from "zod";
 
 const QuerySchema = z.object({
   status: z.enum(JobStatus).optional(),
-  title: z.string().optional(),
+  search: z.string().optional(),
   sortJobDate: z.enum(["asc", "desc"]).optional().default("desc"),
   location: z.string().optional(),
   company: z.string().optional(),
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const query = QuerySchema.safeParse({
       status: queryParams.get("status") || undefined,
-      title: queryParams.get("title") || undefined,
+      search: queryParams.get("search") || undefined,
       sortJobDate: queryParams.get("sortJobDate") || undefined,
       location: queryParams.get("location") || undefined,
       company: queryParams.get("company") || undefined,
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     console.log("Received query params:", query.data);
 
     const status = query.data.status;
-    const title = query.data.title;
+    const search = query.data.search;
     const order = query.data.sortJobDate;
     const location = query.data.location;
     const company = query.data.company;
@@ -59,11 +59,21 @@ export async function GET(request: NextRequest) {
       whereClause.status = status as JobStatus;
     }
 
-    if (title) {
-      whereClause.title = {
-        contains: title,
-        // mode: "insensitive",
-      };
+    if (search) {
+      whereClause.OR = [
+        {
+          title: {
+            contains: search,
+            // mode: "insensitive",
+          },
+        },
+        {
+          company: {
+            contains: search,
+            // mode: "insensitive",
+          },
+        },
+      ];
     }
 
     if (location) {

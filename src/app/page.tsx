@@ -51,7 +51,7 @@ export default function Home() {
   const [filterStatus, setFilterStatus] = React.useState<JobStatus>(
     JobStatus.NEW,
   );
-  const [filterTitle, setFilterTitle] = React.useState<string>("");
+  const [filterSearch, setFilterSearch] = React.useState<string>("");
   const [filterSortJobDate, setFilterSortJobDate] =
     React.useState<string>("desc");
   const [filterLocation, setFilterLocation] = React.useState<string>("");
@@ -77,7 +77,7 @@ export default function Home() {
 
   React.useEffect(() => {
     fetch(
-      `/api/jobs?status=${filterStatus}&title=${filterTitle}&sortJobDate=${filterSortJobDate}&location=${filterLocation}`,
+      `/api/jobs?status=${filterStatus}&search=${filterSearch}&sortJobDate=${filterSortJobDate}&location=${filterLocation}`,
     )
       .then((response) => response.json())
       .then((data) => {
@@ -100,7 +100,7 @@ export default function Home() {
       });
   }, [
     filterStatus,
-    filterTitle,
+    filterSearch,
     filterSortJobDate,
     filterLocation,
     localizations.length,
@@ -327,11 +327,11 @@ export default function Home() {
                 ]}
               />
               <Input
-                label="Título"
+                label="Título / Empresa"
                 type="text"
-                placeholder="Filtrar por título"
-                value={filterTitle}
-                onChange={(e) => setFilterTitle(e.target.value)}
+                placeholder="Filtrar por título ou empresa"
+                value={filterSearch}
+                onChange={(e) => setFilterSearch(e.target.value)}
               />
               <Select
                 label="Localização"
