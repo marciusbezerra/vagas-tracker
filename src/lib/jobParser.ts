@@ -9,10 +9,11 @@ interface JobUpdate {
   seniority?: string;
   url?: string;
   jobDate?: Date;
+  simpleApply?: boolean;
 }
 
 export async function parseJobFromLinkedInLink(
-  link: string
+  link: string,
 ): Promise<JobUpdate> {
   const res = await fetch(link, {
     headers: {
@@ -29,7 +30,8 @@ export async function parseJobFromLinkedInLink(
   const vagaIdLinkedIn = await extractIdFromUrl(link);
   const company = $("a.topcard__org-name-link").text().trim();
   const type = detectType(html);
-  const seniority = detectSeniority(html);
+  const seniority = detectSeniority(title || "");
+  const simpleApply = false; // Precisa login, então não implementado, perigoso no LinkedIn
 
   const location =
     $("span.topcard__flavor--bullet").first().text().trim() ||
@@ -75,6 +77,7 @@ export async function parseJobFromLinkedInLink(
   if (seniority) updateData.seniority = String(seniority);
   if (link) updateData.url = link;
   if (jobDate) updateData.jobDate = jobDate;
+  if (simpleApply) updateData.simpleApply = simpleApply;
 
   console.log("updateData:", updateData);
 
@@ -101,8 +104,8 @@ function detectType(text: string) {
   return "NAO_DEFINIDO";
 }
 
-function detectSeniority(text: string) {
-  const t = text.toLowerCase();
+function detectSeniority(title: string) {
+  const t = title.toLowerCase();
 
   if (t.includes("senior") || t.includes("sr")) return "SENIOR";
   if (t.includes("pleno") || t.includes("mid")) return "PLENO";

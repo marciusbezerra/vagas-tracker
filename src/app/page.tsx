@@ -402,10 +402,14 @@ export default function Home() {
                       <TableRow
                         key={job.id}
                         onClick={() => handleSelectJob(job)}
+                        // se simpleApply for true, muda a cor da linha
                         className={
                           selectedJob?.id === job.id
                             ? "bg-[var(--primary-light)]"
-                            : ""
+                            : "" +
+                              (job.simpleApply
+                                ? "bg-green-50 hover:bg-green-100 cursor-pointer"
+                                : "hover:bg-[var(--surface-hover)] cursor-pointer")
                         }
                       >
                         <TableCell>
