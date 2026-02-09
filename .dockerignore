@@ -1,0 +1,9 @@
+node_modules
+.next
+dist
+.vscode
+npm-debug.log
+*.tgz
+.env
+.env.local
+.DS_Store

@@ -1,0 +1,29 @@
+services:
+  vagas:
+    build: .
+    image: vagas-tracker:latest
+    restart: unless-stopped
+    environment:
+      # Use a SQLite file in a named volume by default - change to your DB if needed
+      - DATABASE_URL=file:/data/dev.db
+      - PORT=3001
+      - MIGRATE=1
+    volumes:
+      - vagas-db:/data
+    labels:
+      - "traefik.enable=true"
+      # Replace the Host rule and network according to your Traefik setup
+      - "traefik.http.routers.vagas.rule=Host(`vagas.mcbmax.com`)"
+      - "traefik.http.services.vagas.loadbalancer.server.port=3001"
+      - "traefik.http.routers.vagas.entrypoints=web" # Ugsing Cloudflare Thunnel, TLS is handled by Cloudflare, so we don't need to enable it in Traefik
+      # - "traefik.http.routers.vagas.tls=true" # Ugsing Cloudflare Thunnel, TLS is handled by Cloudflare, so we don't need to enable it in Traefik
+    networks:
+      - traefik_default
+
+volumes:
+  vagas-db:
+
+networks:
+  # Use your Traefik network (replace with the actual external network name used by your Traefik)
+  	traefik_default:
+      external: true
