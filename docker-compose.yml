@@ -25,5 +25,5 @@ volumes:
 
 networks:
   # Use your Traefik network (replace with the actual external network name used by your Traefik)
-  	traefik_default:
-      external: true
+  traefik_default:
+     external: true
