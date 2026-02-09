@@ -17,6 +17,7 @@ services:
       - "traefik.http.services.vagas.loadbalancer.server.port=3001"
       - "traefik.http.routers.vagas.entrypoints=web" # Ugsing Cloudflare Thunnel, TLS is handled by Cloudflare, so we don't need to enable it in Traefik
       # - "traefik.http.routers.vagas.tls=true" # Ugsing Cloudflare Thunnel, TLS is handled by Cloudflare, so we don't need to enable it in Traefik
+      - "traefik.http.routers.vagas.middlewares=vagas-auth@file"
     networks:
       - traefik_default
 
