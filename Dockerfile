@@ -12,13 +12,13 @@ WORKDIR /app
 
 # Copy package files and install all deps (including dev deps so prisma CLI is available)
 COPY package.json package-lock.json ./
-RUN npm ci --silent
+RUN npm ci
 
 # Copy sources
 COPY . .
 
 # Generate Prisma client and build Next app
-RUN npx prisma generate --silent || true
+RUN npx prisma generate
 RUN npm run build
 
 # 2) Runner
