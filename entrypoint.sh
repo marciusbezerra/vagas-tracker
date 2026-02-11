@@ -9,17 +9,20 @@ if [ "${MIGRATE}" = "1" ] || [ "${MIGRATE}" = "true" ]; then
   echo "🔧 Checking database connection..."
   STATUS_OUTPUT=$(npx prisma migrate status 2>&1 || true)
   echo "$STATUS_OUTPUT"
-  if ! npx prisma migrate status >/dev/null 2>&1; then
-    echo "❌ prisma migrate status failed. Exiting."
-    exit 1
-  fi
 
-  echo "🔧 Running Prisma migrations..."
-  if ! npx prisma migrate deploy; then
-    echo "❌ Failed to run migrations. Exiting."
-    exit 1
+  # If status reports unapplied migrations or status command failed, try to deploy
+  if echo "$STATUS_OUTPUT" | grep -q "Following migration have not yet been applied" || ! npx prisma migrate status >/dev/null 2>&1; then
+    echo "🔧 Applying pending migrations with prisma migrate deploy..."
+    DEPLOY_OUTPUT=$(npx prisma migrate deploy 2>&1 || true)
+    echo "$DEPLOY_OUTPUT"
+    if echo "$DEPLOY_OUTPUT" | grep -q "error" || echo "$DEPLOY_OUTPUT" | grep -q "Error"; then
+      echo "❌ prisma migrate deploy failed. Exiting."
+      exit 1
+    fi
+    echo "✅ Migrations applied."
+  else
+    echo "✅ No pending migrations."
   fi
-  echo "✅ Migrations applied."
 
   echo "🔧 Generating Prisma client..."
   npx prisma generate
