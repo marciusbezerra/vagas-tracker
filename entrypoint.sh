@@ -6,21 +6,11 @@ DB_PATH=${DATABASE_URL:-file:/data/dev.db}
 
 # If MIGRATE=1 environment variable set, try to apply migrations in production
 if [ "${MIGRATE}" = "1" ] || [ "${MIGRATE}" = "true" ]; then
-  echo "🔧 Waiting for database to be ready..."
-  n=0
-  LAST_STATUS_OUTPUT=""
-  until npx prisma migrate status >/dev/null 2>&1 || [ $n -ge 30 ]; do
-    n=$((n+1))
-    echo "Waiting DB ($n/30)..."
-    LAST_STATUS_OUTPUT=$(npx prisma migrate status 2>&1 || true)
-    echo "$LAST_STATUS_OUTPUT"
-    sleep 1
-  done
-
-  # If status still fails after retries, show the last output and exit
+  echo "🔧 Checking database connection..."
+  STATUS_OUTPUT=$(npx prisma migrate status 2>&1 || true)
+  echo "$STATUS_OUTPUT"
   if ! npx prisma migrate status >/dev/null 2>&1; then
-    echo "❌ prisma migrate status did not succeed after $n attempts. Last output:"
-    echo "$LAST_STATUS_OUTPUT"
+    echo "❌ prisma migrate status failed. Exiting."
     exit 1
   fi
 
