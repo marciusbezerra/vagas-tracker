@@ -57,6 +57,7 @@ export default function Home() {
   const [filterSortJobDate, setFilterSortJobDate] =
     React.useState<string>("desc");
   const [filterLocation, setFilterLocation] = React.useState<string>("");
+  const [filterSimpleApply, setFilterSimpleApply] = React.useState<string>("");
 
   // Pagination
   const [linksPage, setLinksPage] = React.useState(1);
@@ -79,7 +80,7 @@ export default function Home() {
 
   React.useEffect(() => {
     fetch(
-      `/api/jobs?status=${filterStatus}&search=${filterSearch}&sortJobDate=${filterSortJobDate}&location=${filterLocation}`,
+      `/api/jobs?status=${filterStatus}&search=${filterSearch}&sortJobDate=${filterSortJobDate}&location=${filterLocation}&simpleApply=${filterSimpleApply}`,
     )
       .then((response) => response.json())
       .then((data) => {
@@ -105,6 +106,7 @@ export default function Home() {
     filterSearch,
     filterSortJobDate,
     filterLocation,
+    filterSimpleApply,
     localizations.length,
   ]);
 
@@ -369,6 +371,17 @@ export default function Home() {
                 options={[
                   { value: "desc", label: "Mais recentes" },
                   { value: "asc", label: "Mais antigas" },
+                ]}
+              />
+              {/* Candidatura Simplificada */}
+              <Select
+                label="Candidatura Simplificada"
+                value={filterSimpleApply}
+                onChange={(e) => setFilterSimpleApply(e.target.value)}
+                options={[
+                  { value: "", label: "Todas" },
+                  { value: "sim", label: "Sim" },
+                  { value: "não", label: "Não" },
                 ]}
               />
             </div>

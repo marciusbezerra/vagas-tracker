@@ -14,6 +14,7 @@ const QuerySchema = z.object({
   sortJobDate: z.enum(["asc", "desc"]).optional().default("desc"),
   location: z.string().optional(),
   company: z.string().optional(),
+  simpleApply: z.enum(["", "sim", "não"]).optional().default(""),
   // page: z.coerce.number().min(1).default(1),
   // limit: z.coerce.number().min(1).max(100).default(20),
 });
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
       sortJobDate: queryParams.get("sortJobDate") || undefined,
       location: queryParams.get("location") || undefined,
       company: queryParams.get("company") || undefined,
+      simpleApply: queryParams.get("simpleApply") || undefined,
       // page: queryParams.get("page") || undefined,
       // limit: queryParams.get("limit") || undefined,
     });
@@ -49,6 +51,7 @@ export async function GET(request: NextRequest) {
     const order = query.data.sortJobDate;
     const location = query.data.location;
     const company = query.data.company;
+    const simpleApply = query.data.simpleApply;
     const whereClause: JobsWhereInput = {};
 
     if (company) {
@@ -81,6 +84,10 @@ export async function GET(request: NextRequest) {
         contains: location,
         // mode: "insensitive",
       };
+    }
+
+    if (simpleApply) {
+      whereClause.simpleApply = simpleApply === "sim";
     }
 
     const orderByClause: JobsOrderByWithRelationInput = {};
