@@ -6,20 +6,23 @@ DB_PATH=${DATABASE_URL:-file:/data/dev.db}
 
 # If MIGRATE=1 environment variable set, try to apply migrations in production
 if [ "${MIGRATE}" = "1" ] || [ "${MIGRATE}" = "true" ]; then
-  # Ensure DATABASE_URL is set (fall back to DB_PATH if provided)
-  export DATABASE_URL=${DATABASE_URL:-$DB_PATH}
-  if [ -z "${DATABASE_URL}" ]; then
-    echo "❌ DATABASE_URL is not set. Migrations require DATABASE_URL. Exiting."
-    exit 1
-  fi
-
   echo "🔧 Waiting for database to be ready..."
   n=0
+  LAST_STATUS_OUTPUT=""
   until npx prisma migrate status >/dev/null 2>&1 || [ $n -ge 30 ]; do
     n=$((n+1))
     echo "Waiting DB ($n/30)..."
+    LAST_STATUS_OUTPUT=$(npx prisma migrate status 2>&1 || true)
+    echo "$LAST_STATUS_OUTPUT"
     sleep 1
   done
+
+  # If status still fails after retries, show the last output and exit
+  if ! npx prisma migrate status >/dev/null 2>&1; then
+    echo "❌ prisma migrate status did not succeed after $n attempts. Last output:"
+    echo "$LAST_STATUS_OUTPUT"
+    exit 1
+  fi
 
   echo "🔧 Running Prisma migrations..."
   if ! npx prisma migrate deploy; then
