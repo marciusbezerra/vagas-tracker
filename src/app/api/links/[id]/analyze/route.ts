@@ -26,6 +26,7 @@ export async function POST(
     }
 
     const jobData = await parseJobFromLinkedInLink(link.url);
+    jobData.simpleApply = link.simpleApply;
 
     const newOrUpdatedData = jobData as Prisma.JobsUncheckedCreateInput;
 

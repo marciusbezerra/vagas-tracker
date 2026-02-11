@@ -4,11 +4,11 @@ import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const { links } = await request.json();
+    const { links, simpleApply } = await request.json();
     if (!Array.isArray(links)) {
       return NextResponse.json(
         { error: "Invalid links format. Expected an array." },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const createdLinks = [];
@@ -22,20 +22,24 @@ export async function POST(request: Request) {
       });
       if (!existingLink) {
         const newLink = await prisma.links.create({
-          data: { done: false, url: urlWithoutParams },
+          data: {
+            done: false,
+            url: urlWithoutParams,
+            simpleApply: !!simpleApply,
+          },
         });
         createdLinks.push(newLink);
       }
     }
     return NextResponse.json(
       { message: "Links processed successfully.", createdLinks },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error processing links:", error);
     return NextResponse.json(
       { error: "An error occurred while processing links." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -51,7 +55,7 @@ export async function GET() {
     console.error("Error fetching links:", error);
     return NextResponse.json(
       { error: "An error occurred while fetching links." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -28,12 +28,14 @@ interface Link {
   id: number;
   url: string;
   done: boolean;
+  simpleApply: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export default function Home() {
   const [links, setLinks] = React.useState("");
+  const [simpleApply, setSimpleApply] = React.useState(false);
   const [submittedLinks, setSubmittedLinks] = React.useState<Link[]>([]);
   const [analyzedJobs, setAnalyzedJobs] = React.useState<
     Prisma.JobsUncheckedCreateInput[]
@@ -119,7 +121,7 @@ export default function Home() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ links: linksArray }),
+      body: JSON.stringify({ links: linksArray, simpleApply }),
     });
     const data = await response.json();
     setLinks("");
@@ -245,6 +247,20 @@ export default function Home() {
               <Button type="submit" variant="primary" size="sm">
                 Adicionar Links
               </Button>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="simplifiedApplication"
+                  checked={simpleApply}
+                  onChange={(e) => setSimpleApply(e.target.checked)}
+                />
+                <label
+                  htmlFor="simplifiedApplication"
+                  className="text-sm text-[var(--text-secondary)]"
+                >
+                  Candidatura simplificada
+                </label>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -265,6 +281,7 @@ export default function Home() {
                     <TableHead>Ações</TableHead>
                     <TableHead>URL</TableHead>
                     <TableHead>Data</TableHead>
+                    <TableHead>Candidatura Simplificada</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -291,6 +308,9 @@ export default function Home() {
                       </TableCell>
                       <TableCell className="text-xs">
                         {new Date(link.createdAt).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {link.simpleApply ? "Sim" : "Não"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -408,7 +428,7 @@ export default function Home() {
                             ? "bg-[var(--primary-light)]"
                             : "" +
                               (job.simpleApply
-                                ? "bg-green-50 hover:bg-green-100 cursor-pointer"
+                                ? "bg-green-900 hover:bg-green-800 cursor-pointer"
                                 : "hover:bg-[var(--surface-hover)] cursor-pointer")
                         }
                       >
@@ -526,6 +546,12 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
+
+                {selectedJob.simpleApply && (
+                  <div>
+                    <Badge variant="success">Candidatura Simplificada</Badge>
+                  </div>
+                )}
 
                 <div>
                   <span className="text-xs text-[var(--text-muted)]">URL</span>

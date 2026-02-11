@@ -41,9 +41,10 @@ enum JobStatus {
 }
 
 model Links {
-  id        Int      @id @default(autoincrement())
-  url       String   @unique
-  done      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  url         String   @unique
+  simpleApply Boolean  @default(false)
+  done        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
