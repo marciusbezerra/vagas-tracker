@@ -22,7 +22,9 @@ import {
   TableHead,
   TableCell,
   Pagination,
+  Checkbox,
 } from "@/components/ui";
+import { set } from "zod";
 
 interface Link {
   id: number;
@@ -56,6 +58,8 @@ export default function Home() {
   const [localizations, setLocalizations] = React.useState<string[]>([]);
   const [status, setStatus] = React.useState<JobStatus>(JobStatus.NEW);
   const [note, setNote] = React.useState<string>("");
+  const [recruiterNotified, setRecruiterNotified] =
+    React.useState<boolean>(false);
   const [sameCompanyJobs, setSameCompanyJobs] = React.useState<
     Prisma.JobsUncheckedCreateInput[]
   >([]);
@@ -66,7 +70,7 @@ export default function Home() {
   );
   const [filterSearch, setFilterSearch] = React.useState<string>("");
   const [filterSortJobDate, setFilterSortJobDate] =
-    React.useState<string>("desc");
+    React.useState<string>("job_desc");
   const [filterLocation, setFilterLocation] = React.useState<string>("");
   const [filterSimpleApply, setFilterSimpleApply] = React.useState<string>("");
 
@@ -148,6 +152,7 @@ export default function Home() {
   async function handleSelectJob(job: Prisma.JobsUncheckedCreateInput) {
     setNote(job.note || "");
     setStatus(job.status || JobStatus.NEW);
+    setRecruiterNotified(job.recruiterNotified || false);
     setSelectedJob(job);
 
     fetch(`/api/jobs?company=${encodeURIComponent(job.company)}`)
@@ -183,18 +188,26 @@ export default function Home() {
     jobId: number,
     status: JobStatus,
     note: string,
+    recruiterNotified: boolean,
   ) {
     try {
       const res = await fetch(`/api/jobs/${jobId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, note }),
+        body: JSON.stringify({ status, note, recruiterNotified }),
       });
       await res.json();
 
       setAnalyzedJobs((prevJobs) =>
         prevJobs.map((job) =>
-          job.id === jobId ? { ...job, status: status, note: note } : job,
+          job.id === jobId
+            ? {
+                ...job,
+                status: status,
+                note: note,
+                recruiterNotified: recruiterNotified,
+              }
+            : job,
         ),
       );
 
@@ -202,6 +215,21 @@ export default function Home() {
     } catch (err) {
       console.error("Erro ao atualizar vaga:", err);
     }
+  }
+
+  function recruiterMustBeNotified(
+    applyDate: Date | null,
+    status: JobStatus,
+    recruiterNotified: boolean,
+  ): boolean {
+    if (status === JobStatus.APPLIED && !recruiterNotified && applyDate) {
+      const now = new Date();
+      const diffInDays = Math.floor(
+        (now.getTime() - applyDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      return diffInDays <= 7;
+    }
+    return false;
   }
 
   const getStatusLabel = (status: JobStatus): string => {
@@ -428,8 +456,10 @@ export default function Home() {
                 value={filterSortJobDate}
                 onChange={(e) => setFilterSortJobDate(e.target.value)}
                 options={[
-                  { value: "desc", label: "Mais recentes" },
-                  { value: "asc", label: "Mais antigas" },
+                  { value: "job_desc", label: "Vaga - Mais recentes" },
+                  { value: "job_asc", label: "Vaga - Mais antigas" },
+                  { value: "apply_desc", label: "Candidatura - Mais recentes" },
+                  { value: "apply_asc", label: "Candidatura - Mais antigas" },
                 ]}
               />
               {/* Candidatura Simplificada */}
@@ -526,7 +556,24 @@ export default function Home() {
                         <TableCell>
                           <div>
                             <div className="font-medium text-sm">
-                              {job.title}
+                              {job.title + " "}
+                              {job.recruiterNotified && (
+                                <Badge
+                                  variant="warning"
+                                  // className="ml-2 text-xs h-5 px-1.5"
+                                >
+                                  R. Notificado
+                                </Badge>
+                              )}
+                              {recruiterMustBeNotified(
+                                job.applyDate ? new Date(job.applyDate) : null,
+                                job.status || JobStatus.NEW,
+                                job.recruiterNotified || false,
+                              ) && (
+                                <Badge variant="error">
+                                  Notificar Recrutador !!
+                                </Badge>
+                              )}
                             </div>
                             {job.note && (
                               <div className="text-xs text-[var(--error)] mt-0.5">
@@ -686,7 +733,12 @@ export default function Home() {
                   className="mt-4 pt-4 border-t border-[var(--border)] space-y-3"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    handleJobUpdate(selectedJob.id!, status, note);
+                    handleJobUpdate(
+                      selectedJob.id!,
+                      status,
+                      note,
+                      recruiterNotified,
+                    );
                   }}
                 >
                   <Select
@@ -697,6 +749,12 @@ export default function Home() {
                       value: statusOption,
                       label: getStatusLabel(statusOption),
                     }))}
+                  />
+                  {/* Recrutador Notificado */}
+                  <Checkbox
+                    label="Recrutador Notificado"
+                    checked={recruiterNotified}
+                    onChange={(e) => setRecruiterNotified(e.target.checked)}
                   />
                   <TextArea
                     label="Anotações"

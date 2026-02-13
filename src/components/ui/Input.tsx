@@ -24,8 +24,7 @@ export function Input({ label, error, className = "", ...props }: InputProps) {
   );
 }
 
-interface TextAreaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
 }
@@ -87,6 +86,21 @@ export function Select({
         ))}
       </select>
       {error && <p className="mt-1 text-sm text-[var(--error)]">{error}</p>}
+    </div>
+  );
+}
+
+interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+}
+
+export function Checkbox({ label, className = "", ...props }: CheckboxProps) {
+  return (
+    <div className={`flex items-center space-x-2 ${className}`}>
+      <input type="checkbox" className="checkbox" {...props} />
+      {label && (
+        <label className="text-sm text-[var(--foreground)]">{label}</label>
+      )}
     </div>
   );
 }

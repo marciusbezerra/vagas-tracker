@@ -26,6 +26,8 @@ model Jobs {
   jobDate     DateTime
   note        String?
   simpleApply Boolean  @default(false)
+  applyDate   DateTime?
+  recruiterNotified Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

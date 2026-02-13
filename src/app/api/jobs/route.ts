@@ -11,7 +11,10 @@ import { z } from "zod";
 const QuerySchema = z.object({
   status: z.enum(JobStatus).optional(),
   search: z.string().optional(),
-  sortJobDate: z.enum(["asc", "desc"]).optional().default("desc"),
+  sortJobDate: z
+    .enum(["job_asc", "job_desc", "apply_asc", "apply_desc"])
+    .optional()
+    .default("job_desc"),
   location: z.string().optional(),
   company: z.string().optional(),
   simpleApply: z.enum(["", "sim", "não"]).optional().default(""),
@@ -91,10 +94,14 @@ export async function GET(request: NextRequest) {
     }
 
     const orderByClause: JobsOrderByWithRelationInput = {};
-    if (order === "asc") {
+    if (order === "job_asc") {
       orderByClause.jobDate = "asc";
-    } else if (order === "desc") {
+    } else if (order === "job_desc") {
       orderByClause.jobDate = "desc";
+    } else if (order === "apply_asc") {
+      orderByClause.applyDate = "asc";
+    } else if (order === "apply_desc") {
+      orderByClause.applyDate = "desc";
     }
 
     console.log("Where Clause:", whereClause);
