@@ -79,6 +79,12 @@ export async function GET(request: NextRequest) {
             // mode: "insensitive",
           },
         },
+        {
+          vagaIdLinkedIn: {
+            equals: search,
+            // mode: "insensitive",
+          },
+        },
       ];
     }
 

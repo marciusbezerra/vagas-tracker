@@ -436,9 +436,9 @@ export default function Home() {
                 ]}
               />
               <Input
-                label="Título / Empresa"
+                label="Título / Empresa / VagaId"
                 type="text"
-                placeholder="Filtrar por título ou empresa"
+                placeholder="Filtrar por título, empresa ou vagaId"
                 value={filterSearch}
                 onChange={(e) => setFilterSearch(e.target.value)}
               />
