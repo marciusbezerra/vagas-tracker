@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const { links, simpleApply } = await request.json();
+    const { links, simpleApply, applied } = await request.json();
     if (!Array.isArray(links)) {
       return NextResponse.json(
         { error: "Invalid links format. Expected an array." },
@@ -26,9 +26,23 @@ export async function POST(request: Request) {
             done: false,
             url: urlWithoutParams,
             simpleApply: !!simpleApply,
+            applied: !!applied,
           },
         });
         createdLinks.push(newLink);
+      } else {
+        // Only update to true... never set to false to avoid losing data
+        const updateSimpleApply = existingLink.simpleApply || !!simpleApply;
+        const updateApplied = existingLink.applied || !!applied;
+        const updatedLink = await prisma.links.update({
+          where: { id: existingLink.id },
+          data: {
+            simpleApply: updateSimpleApply,
+            applied: updateApplied,
+            done: false, // Reset done to false if there's an update
+          },
+        });
+        createdLinks.push(updatedLink);
       }
     }
     return NextResponse.json(

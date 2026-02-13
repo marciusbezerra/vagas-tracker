@@ -29,13 +29,24 @@ interface Link {
   url: string;
   done: boolean;
   simpleApply: boolean;
+  applied: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
+enum LinkIncludeType {
+  DEFAULT = "default",
+  APPLIED = "applied",
+  WITH_SIMPLE_APPLY = "with_simple_apply",
+}
+
 export default function Home() {
   const [links, setLinks] = React.useState("");
-  const [simpleApply, setSimpleApply] = React.useState(false);
+  const [linkIncludeType, setLinkIncludeType] = React.useState<LinkIncludeType>(
+    LinkIncludeType.DEFAULT,
+  );
+  // const [appliedLink, setAppliedLink] = React.useState<string | null>(null);
+  // const [simpleApply, setSimpleApply] = React.useState(false);
   const [submittedLinks, setSubmittedLinks] = React.useState<Link[]>([]);
   const [analyzedJobs, setAnalyzedJobs] = React.useState<
     Prisma.JobsUncheckedCreateInput[]
@@ -123,7 +134,11 @@ export default function Home() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ links: linksArray, simpleApply }),
+      body: JSON.stringify({
+        links: linksArray,
+        simpleApply: linkIncludeType === LinkIncludeType.WITH_SIMPLE_APPLY,
+        applied: linkIncludeType === LinkIncludeType.APPLIED,
+      }),
     });
     const data = await response.json();
     setLinks("");
@@ -232,7 +247,40 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Add Links Section */}
+        <Card className="mb-4 w-full">
+          <CardHeader>
+            <CardTitle>Links Úteis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-row space-x-2">
+              <a
+                href="https://www.linkedin.com/jobs/search/?currentJobId=4372189820&f_EA=true&f_WT=2&geoId=106057199&keywords=%22.net%22%20OR%20%22angular%22%20OR%20%22ionic%22%20OR%20%22c%23%22%20OR%20%22asp%22%20OR%20%22webforms%22%20OR%20%22bv6%22%20OR%20%22winforms%22&origin=JOB_SEARCH_PAGE_SEARCH_BUTTON&refresh=true&sortBy=DD"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--primary)] hover:underline"
+              >
+                VAGAS COM MENOS DE 10 CANDITADOS
+              </a>
+              <a
+                href="https://www.linkedin.com/jobs/search/?currentJobId=4364471543&f_TPR=r86400&f_WT=2&geoId=106057199&keywords=%22.net%22%20OR%20%22angular%22%20OR%20%22ionic%22%20OR%20%22c%23%22%20OR%20%22asp%22%20OR%20%22webforms%22%20OR%20%22bv6%22%20OR%20%22winforms%22&origin=JOB_SEARCH_PAGE_SEARCH_BUTTON&refresh=true&sortBy=DD"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--primary)] hover:underline"
+              >
+                VAGAS DE HOJE!
+              </a>
+              <a
+                href="https://www.linkedin.com/jobs/search/?currentJobId=4363800573&f_WT=2&geoId=106057199&keywords=%22.net%22%20OR%20%22angular%22%20OR%20%22ionic%22%20OR%20%22c%23%22%20OR%20%22asp%22%20OR%20%22webforms%22%20OR%20%22bv6%22%20OR%20%22winforms%22&origin=JOB_SEARCH_PAGE_SEARCH_BUTTON&refresh=true&sortBy=R"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--primary)] hover:underline"
+              >
+                VAGAS
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="mb-4">
           <CardHeader>
             <CardTitle>Adicionar Novas Vagas</CardTitle>
@@ -246,22 +294,29 @@ export default function Home() {
                 value={links}
                 onChange={(e) => setLinks(e.target.value)}
               />
-              <Button type="submit" variant="primary" size="sm">
-                Adicionar Links
-              </Button>
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="simplifiedApplication"
-                  checked={simpleApply}
-                  onChange={(e) => setSimpleApply(e.target.checked)}
-                />
-                <label
-                  htmlFor="simplifiedApplication"
-                  className="text-sm text-[var(--text-secondary)]"
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  className="whitespace-nowrap"
                 >
-                  Candidatura simplificada
-                </label>
+                  Adicionar Links
+                </Button>
+                <Select
+                  value={linkIncludeType}
+                  onChange={(e) =>
+                    setLinkIncludeType(e.target.value as LinkIncludeType)
+                  }
+                  options={[
+                    { value: LinkIncludeType.DEFAULT, label: "Padrão" },
+                    {
+                      value: LinkIncludeType.WITH_SIMPLE_APPLY,
+                      label: "Candidatura Simplificada",
+                    },
+                    { value: LinkIncludeType.APPLIED, label: "Aplicado" },
+                  ]}
+                />
               </div>
             </form>
           </CardContent>
@@ -284,6 +339,7 @@ export default function Home() {
                     <TableHead>URL</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Candidatura Simplificada</TableHead>
+                    <TableHead>Aplicado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -313,6 +369,9 @@ export default function Home() {
                       </TableCell>
                       <TableCell className="text-xs">
                         {link.simpleApply ? "Sim" : "Não"}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {link.applied ? "Sim" : "Não"}
                       </TableCell>
                     </TableRow>
                   ))}

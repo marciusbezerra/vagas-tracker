@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { parseJobFromLinkedInLink } from "@/lib/jobParser";
-import { Prisma } from "@/generated/prisma/client";
+import { JobStatus, Prisma } from "@/generated/prisma/client";
 
 export async function POST(
   request: Request,
@@ -27,6 +27,7 @@ export async function POST(
 
     const jobData = await parseJobFromLinkedInLink(link.url);
     jobData.simpleApply = link.simpleApply;
+    jobData.status = link.applied ? JobStatus.APPLIED : JobStatus.NEW;
 
     const newOrUpdatedData = jobData as Prisma.JobsUncheckedCreateInput;
 
@@ -37,7 +38,7 @@ export async function POST(
         update: { ...newOrUpdatedData },
       });
 
-      const updatedLink = await prisma.links.update({
+      await prisma.links.update({
         where: { id: linkId },
         data: { done: true },
       });

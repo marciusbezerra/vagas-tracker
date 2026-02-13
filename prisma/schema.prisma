@@ -44,6 +44,7 @@ model Links {
   id          Int      @id @default(autoincrement())
   url         String   @unique
   simpleApply Boolean  @default(false)
+  applied     Boolean  @default(false)
   done        Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

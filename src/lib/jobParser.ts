@@ -1,3 +1,4 @@
+import { JobStatus } from "@/generated/prisma/enums";
 import { load } from "cheerio";
 
 interface JobUpdate {
@@ -10,6 +11,7 @@ interface JobUpdate {
   url?: string;
   jobDate?: Date;
   simpleApply?: boolean;
+  status?: JobStatus;
 }
 
 export async function parseJobFromLinkedInLink(
