@@ -24,11 +24,11 @@ import {
   Pagination,
   Checkbox,
 } from "@/components/ui";
-import { set } from "zod";
 
 interface Link {
   id: number;
   url: string;
+  error: string | null;
   done: boolean;
   simpleApply: boolean;
   applied: boolean;
@@ -390,7 +390,12 @@ export default function Home() {
                           className="text-[var(--primary)] hover:underline truncate block max-w-md text-xs"
                         >
                           {link.url}
-                        </a>
+                        </a>{" "}
+                        {link.error && (
+                          <span className="text-red-500 text-xs">
+                            {link.error}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         {new Date(link.createdAt).toLocaleDateString("pt-BR")}

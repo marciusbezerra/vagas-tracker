@@ -57,7 +57,7 @@ export async function POST(
         link.error = (error as Error).message;
         await prisma.links.update({
           where: { id: linkId },
-          data: { error: link.error, done: true },
+          data: { error: link.error, done: false },
         });
       } catch (updateError) {
         console.error("Error updating link with error message:", updateError);
