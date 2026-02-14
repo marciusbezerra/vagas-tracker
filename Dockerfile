@@ -45,6 +45,8 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && chmod +x ./entrypoint.sh
 
+RUN npm install sqlite3
+
 EXPOSE 3001
 
 # entrypoint will optionally run migrations (when MIGRATE=1)
