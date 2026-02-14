@@ -12,6 +12,7 @@ interface JobUpdate {
   jobDate?: Date;
   simpleApply?: boolean;
   status?: JobStatus;
+  applyDate?: Date | null;
 }
 
 export async function parseJobFromLinkedInLink(

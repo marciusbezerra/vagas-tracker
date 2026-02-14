@@ -42,10 +42,9 @@ COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
 # Ensure runtime deps for sqlite are present
 RUN apt-get update \
   && apt-get install -y --no-install-recommends libsqlite3-0 ca-certificates \
+  && apt-get install -y sqlite3 \
   && rm -rf /var/lib/apt/lists/* \
   && chmod +x ./entrypoint.sh
-
-RUN npm install sqlite3
 
 EXPOSE 3001
 
