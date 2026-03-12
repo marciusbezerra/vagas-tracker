@@ -11,7 +11,7 @@ export async function PUT(
     console.log("Updating job with ID:", jobId);
     const body = await request.json();
     console.log("Request body:", body);
-    const { status, note, recruiterNotified } = body;
+    const { status, note, recruiterNotified, preferred } = body;
 
     const job = await prisma.jobs.findUnique({ where: { id: Number(jobId) } });
 
@@ -31,6 +31,7 @@ export async function PUT(
         status,
         note,
         recruiterNotified,
+        preferred,
         applyDate,
       },
     });

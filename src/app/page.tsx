@@ -60,6 +60,7 @@ export default function Home() {
   const [note, setNote] = React.useState<string>("");
   const [recruiterNotified, setRecruiterNotified] =
     React.useState<boolean>(false);
+  const [preferred, setPreferred] = React.useState<boolean>(false);
   const [sameCompanyJobs, setSameCompanyJobs] = React.useState<
     Prisma.JobsUncheckedCreateInput[]
   >([]);
@@ -153,6 +154,7 @@ export default function Home() {
     setNote(job.note || "");
     setStatus(job.status || JobStatus.NEW);
     setRecruiterNotified(job.recruiterNotified || false);
+    setPreferred(job.preferred || false);
     setSelectedJob(job);
 
     fetch(`/api/jobs?company=${encodeURIComponent(job.company)}`)
@@ -189,12 +191,13 @@ export default function Home() {
     status: JobStatus,
     note: string,
     recruiterNotified: boolean,
+    preferred: boolean,
   ) {
     try {
       const res = await fetch(`/api/jobs/${jobId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, note, recruiterNotified }),
+        body: JSON.stringify({ status, note, recruiterNotified, preferred }),
       });
       await res.json();
 
@@ -206,6 +209,7 @@ export default function Home() {
                 status: status,
                 note: note,
                 recruiterNotified: recruiterNotified,
+                preferred: preferred,
               }
             : job,
         ),
@@ -561,6 +565,16 @@ export default function Home() {
                         <TableCell>
                           <div>
                             <div className="font-medium text-sm">
+                              {job.preferred && (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="inline h-2 w-2 text-yellow-400 mr-1"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.966a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.966c.3.921-.755 1.688-1.538 1.118l-3.37-2.448a1 1 0 00-1.175 0l-3.37 2.448c-.783.57-1.838-.197-1.538-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.049 9.393c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.966z" />
+                                </svg>
+                              )}
                               {job.title + " "}
                               {job.recruiterNotified && (
                                 <Badge
@@ -743,6 +757,7 @@ export default function Home() {
                       status,
                       note,
                       recruiterNotified,
+                      preferred,
                     );
                   }}
                 >
@@ -755,12 +770,24 @@ export default function Home() {
                       label: getStatusLabel(statusOption),
                     }))}
                   />
-                  {/* Recrutador Notificado */}
-                  <Checkbox
-                    label="Recrutador Notificado"
-                    checked={recruiterNotified}
-                    onChange={(e) => setRecruiterNotified(e.target.checked)}
-                  />
+                  <div className="flex items-center gap-4">
+                    <label className="cursor-pointer flex items-center gap-1">
+                      <Checkbox
+                        id="recruiterNotified"
+                        checked={recruiterNotified}
+                        onChange={(e) => setRecruiterNotified(e.target.checked)}
+                      />
+                      Recrutador Notificado
+                    </label>
+                    <label className="cursor-pointer flex items-center gap-1">
+                      <Checkbox
+                        id="preferred"
+                        checked={preferred}
+                        onChange={(e) => setPreferred(e.target.checked)}
+                      />
+                      Vaga Preferida
+                    </label>
+                  </div>
                   <TextArea
                     label="Anotações"
                     value={note}

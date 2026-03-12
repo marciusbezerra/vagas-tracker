@@ -28,6 +28,7 @@ model Jobs {
   simpleApply Boolean  @default(false)
   applyDate   DateTime?
   recruiterNotified Boolean @default(false)
+  preferred   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
